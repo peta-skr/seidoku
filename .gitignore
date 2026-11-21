@@ -1,0 +1,6 @@
+# Startup Mode（手元で使う学習ツール）の状態と、役を演じさせるコマンドは公開しない
+campaign/
+.claude/commands/
+
+# Claude Code の個人設定
+.claude/settings.local.json
