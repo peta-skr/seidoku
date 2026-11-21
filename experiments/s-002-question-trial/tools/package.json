@@ -1,0 +1,9 @@
+{
+  "name": "s-002-tools",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "jsdom": "^26.0.0"
+  }
+}

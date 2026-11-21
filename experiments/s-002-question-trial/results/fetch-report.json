@@ -1,0 +1,593 @@
+[
+  {
+    "id": "01",
+    "url": "https://zenn.dev/calloc134/articles/postgres-internal-mvcc-index",
+    "finalUrl": "https://zenn.dev/calloc134/articles/postgres-internal-mvcc-index",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "fetchedAt": "2026-11-16T12:50:01.897Z",
+    "elapsedMs": 451,
+    "htmlBytes": 313367,
+    "title": "横断的に理解する PostgreSQL の 内部データ構造: MVCC・トランザクション分離・インデックス",
+    "siteName": "Zenn",
+    "publishedTime": null,
+    "fullChars": 19067,
+    "range": null,
+    "unitChars": 19067,
+    "unitSha256": "b05002d18ca93dc9c58331c5c9dbd01f7dd826518d844dcb2c193a389d506390",
+    "counts": {
+      "math": 0,
+      "images": 12,
+      "codeBlocks": 7,
+      "tables": 3
+    },
+    "headings": [
+      {
+        "level": 2,
+        "text": "はじめに"
+      },
+      {
+        "level": 2,
+        "text": "今回割愛したもの"
+      },
+      {
+        "level": 2,
+        "text": "追記型アーキテクチャとは"
+      },
+      {
+        "level": 2,
+        "text": "MVCC (Multi-Version Concurrency Control) とは"
+      },
+      {
+        "level": 2,
+        "text": "インデックス構造"
+      },
+      {
+        "level": 2,
+        "text": "トランザクション分離モデル"
+      },
+      {
+        "level": 3,
+        "text": "「Read Committed」"
+      },
+      {
+        "level": 3,
+        "text": "「Repeatable Read」"
+      },
+      {
+        "level": 3,
+        "text": "2 つの違い"
+      },
+      {
+        "level": 2,
+        "text": "PostgreSQL におけるデータ構造の詳細"
+      },
+      {
+        "level": 2,
+        "text": "トランザクションのデータ構造"
+      },
+      {
+        "level": 2,
+        "text": "コマンド ID とは"
+      },
+      {
+        "level": 2,
+        "text": "物理タプルのデータ構造"
+      },
+      {
+        "level": 2,
+        "text": "スナップショットのパラメータ"
+      },
+      {
+        "level": 2,
+        "text": "可視性チェックアルゴリズム"
+      },
+      {
+        "level": 2,
+        "text": "トランザクションの可視性チェックアルゴリズム"
+      },
+      {
+        "level": 2,
+        "text": "物理タプルの可視性チェックアルゴリズム"
+      },
+      {
+        "level": 3,
+        "text": "前提"
+      },
+      {
+        "level": 3,
+        "text": "A. 挿入側のタプル可視性チェック (t_xmin について)"
+      },
+      {
+        "level": 3,
+        "text": "B. 削除 or 更新側のタプル可視性チェック (t_xmax について)"
+      },
+      {
+        "level": 2,
+        "text": "トランザクション分離モデルの実装差分"
+      },
+      {
+        "level": 2,
+        "text": "「Read Committed」 の実装"
+      },
+      {
+        "level": 2,
+        "text": "「Repeatable Read」 の実装"
+      },
+      {
+        "level": 2,
+        "text": "インデックス (b-link tree)"
+      },
+      {
+        "level": 2,
+        "text": "まとめ"
+      },
+      {
+        "level": 2,
+        "text": "参考文献"
+      },
+      {
+        "level": 2,
+        "text": "PostgreSQL ドキュメント"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "id": "02",
+    "url": "https://qiita.com/zreactor/items/1cef0c7ba31aac5402bb",
+    "finalUrl": "https://qiita.com/zreactor/items/1cef0c7ba31aac5402bb",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "fetchedAt": "2026-11-16T12:50:02.495Z",
+    "elapsedMs": 475,
+    "htmlBytes": 179902,
+    "title": "Go runtimeの内部実装を覗きながら、チャンネルのことを知る",
+    "siteName": "Qiita",
+    "publishedTime": "2019-12-24T04:26:09.000+09:00",
+    "fullChars": 12925,
+    "range": null,
+    "unitChars": 12925,
+    "unitSha256": "e08d620fee22c89e37dca10e73e006bcb89ad54affbb90bf871c45fee776f98d",
+    "counts": {
+      "math": 0,
+      "images": 0,
+      "codeBlocks": 18,
+      "tables": 0
+    },
+    "headings": [
+      {
+        "level": 4,
+        "text": "Intro"
+      },
+      {
+        "level": 3,
+        "text": "まず、Goのチャンネルは何をするものなのか？"
+      },
+      {
+        "level": 4,
+        "text": "特徴"
+      },
+      {
+        "level": 4,
+        "text": "作成例"
+      },
+      {
+        "level": 4,
+        "text": "channelは主に３種類ある"
+      },
+      {
+        "level": 4,
+        "text": "チャンネルの中身"
+      },
+      {
+        "level": 4,
+        "text": "goroutinesによるチャンネルへの読み込み・書き込みの処理例"
+      },
+      {
+        "level": 5,
+        "text": "例"
+      },
+      {
+        "level": 5,
+        "text": "処理の概要"
+      },
+      {
+        "level": 5,
+        "text": "Case 1) synchronousで1対1の読み込み・書き込みの時の処理"
+      },
+      {
+        "level": 5,
+        "text": "Case 2) bufferの容量がいっぱいになった時の処理"
+      },
+      {
+        "level": 5,
+        "text": "＊Goのスレッドについて"
+      },
+      {
+        "level": 5,
+        "text": "Case 3) bufferの中に値がないのに受け取りを待っている関数がある"
+      },
+      {
+        "level": 4,
+        "text": "チャンネルのgoroutine・メモリー安全性をなぜ担保できているか、実装から見える"
+      },
+      {
+        "level": 4,
+        "text": "チャンネルが行える他のオペレーション"
+      },
+      {
+        "level": 4,
+        "text": "runtime/chan.goの中身"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "id": "03",
+    "url": "https://dev.classmethod.jp/articles/go-runtime-goroutine/",
+    "finalUrl": "https://dev.classmethod.jp/articles/go-runtime-goroutine/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "fetchedAt": "2026-11-16T12:50:03.104Z",
+    "elapsedMs": 436,
+    "htmlBytes": 430585,
+    "title": "Go runtime の goroutine の動きを覗いてみた",
+    "siteName": "クラスメソッド発「やってみた」系技術メディア | DevelopersIO",
+    "publishedTime": "2026-03-21T03:47:26.173Z",
+    "fullChars": 7005,
+    "range": null,
+    "unitChars": 7005,
+    "unitSha256": "43a5c8b71806375b04fab01d9a34e064d17c80b13f777b5428c43bdf4d07bc66",
+    "counts": {
+      "math": 0,
+      "images": 17,
+      "codeBlocks": 5,
+      "tables": 3
+    },
+    "headings": [
+      {
+        "level": 2,
+        "text": "goroutine とは"
+      },
+      {
+        "level": 3,
+        "text": "goroutineにおける 3つの概念 GMP"
+      },
+      {
+        "level": 2,
+        "text": "GOMAXPROCS を変えて検証"
+      },
+      {
+        "level": 3,
+        "text": "I/O処理の場合"
+      },
+      {
+        "level": 3,
+        "text": "CPU処理の場合"
+      },
+      {
+        "level": 2,
+        "text": "go tool trace で GMP の動きを見てみる"
+      },
+      {
+        "level": 2,
+        "text": "まとめ"
+      },
+      {
+        "level": 2,
+        "text": "参考"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "id": "04",
+    "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+    "finalUrl": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+    "status": 200,
+    "contentType": "text/html",
+    "fetchedAt": "2026-11-16T12:50:03.826Z",
+    "elapsedMs": 557,
+    "htmlBytes": 42791,
+    "title": "How to do distributed locking — Martin Kleppmann’s blog",
+    "siteName": null,
+    "publishedTime": null,
+    "fullChars": 23451,
+    "range": null,
+    "unitChars": 23451,
+    "unitSha256": "28ea380b708d9e38d633ea2f834018fa2e817e56f4b631257eae9335ff0c19d6",
+    "counts": {
+      "math": 0,
+      "images": 2,
+      "codeBlocks": 1,
+      "tables": 0
+    },
+    "headings": [
+      {
+        "level": 2,
+        "text": "What are you using that lock for?"
+      },
+      {
+        "level": 2,
+        "text": "Protecting a resource with a lock"
+      },
+      {
+        "level": 2,
+        "text": "Making the lock safe with fencing"
+      },
+      {
+        "level": 2,
+        "text": "Using time to solve consensus"
+      },
+      {
+        "level": 2,
+        "text": "Breaking Redlock with bad timings"
+      },
+      {
+        "level": 2,
+        "text": "The synchrony assumptions of Redlock"
+      },
+      {
+        "level": 2,
+        "text": "Conclusion"
+      },
+      {
+        "level": 2,
+        "text": "References"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "id": "05",
+    "url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+    "finalUrl": "https://builder.aws.com/content/3EumjoZascWd1oZiEgL8ORlv3qE/timeouts-retries-and-backoff-with-jitter",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "fetchedAt": "2026-11-16T12:50:06.502Z",
+    "elapsedMs": 2330,
+    "htmlBytes": 139337,
+    "title": "Timeouts, retries, and backoff with jitter | AWS Builder Center",
+    "siteName": null,
+    "publishedTime": "2019-12-05T12:00:00.000Z",
+    "fullChars": 14169,
+    "range": null,
+    "unitChars": 14169,
+    "unitSha256": "00d2f67f494d526c726828d4c47253542185ec853bb20700052535719af7c783",
+    "counts": {
+      "math": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0
+    },
+    "headings": [
+      {
+        "level": 2,
+        "text": "Timeouts, retries, and backoff with jitter"
+      },
+      {
+        "level": 2,
+        "text": "Introduction"
+      },
+      {
+        "level": 2,
+        "text": "Failures Happen"
+      },
+      {
+        "level": 2,
+        "text": "Timeouts"
+      },
+      {
+        "level": 2,
+        "text": "Retries and backoff"
+      },
+      {
+        "level": 2,
+        "text": "Jitter"
+      },
+      {
+        "level": 2,
+        "text": "Conclusion"
+      }
+    ],
+    "warnings": [
+      "別のホストへ転送された: builder.aws.com"
+    ]
+  },
+  {
+    "id": "06",
+    "url": "https://arxiv.org/html/1706.03762v7",
+    "finalUrl": "https://arxiv.org/html/1706.03762v7",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "fetchedAt": "2026-11-16T12:50:22.304Z",
+    "elapsedMs": 501,
+    "htmlBytes": 188707,
+    "title": "Attention Is All You Need",
+    "siteName": null,
+    "publishedTime": null,
+    "fullChars": 39427,
+    "range": {
+      "from": "3 Model Architecture",
+      "until": "5 Training"
+    },
+    "unitChars": 13984,
+    "unitSha256": "d4296254833c77499ec1b1b277b77973994bfefd8176e73b8d1c31d1ab029192",
+    "counts": {
+      "math": 116,
+      "images": 3,
+      "codeBlocks": 0,
+      "tables": 7
+    },
+    "headings": [
+      {
+        "level": 6,
+        "text": "Abstract"
+      },
+      {
+        "level": 2,
+        "text": "1 Introduction"
+      },
+      {
+        "level": 2,
+        "text": "2 Background"
+      },
+      {
+        "level": 2,
+        "text": "3 Model Architecture"
+      },
+      {
+        "level": 3,
+        "text": "3.1 Encoder and Decoder Stacks"
+      },
+      {
+        "level": 5,
+        "text": "Encoder:"
+      },
+      {
+        "level": 5,
+        "text": "Decoder:"
+      },
+      {
+        "level": 3,
+        "text": "3.2 Attention"
+      },
+      {
+        "level": 4,
+        "text": "3.2.1 Scaled Dot-Product Attention"
+      },
+      {
+        "level": 4,
+        "text": "3.2.2 Multi-Head Attention"
+      },
+      {
+        "level": 4,
+        "text": "3.2.3 Applications of Attention in our Model"
+      },
+      {
+        "level": 3,
+        "text": "3.3 Position-wise Feed-Forward Networks"
+      },
+      {
+        "level": 3,
+        "text": "3.4 Embeddings and Softmax"
+      },
+      {
+        "level": 3,
+        "text": "3.5 Positional Encoding"
+      },
+      {
+        "level": 2,
+        "text": "4 Why Self-Attention"
+      },
+      {
+        "level": 2,
+        "text": "5 Training"
+      },
+      {
+        "level": 3,
+        "text": "5.1 Training Data and Batching"
+      },
+      {
+        "level": 3,
+        "text": "5.2 Hardware and Schedule"
+      },
+      {
+        "level": 3,
+        "text": "5.3 Optimizer"
+      },
+      {
+        "level": 3,
+        "text": "5.4 Regularization"
+      },
+      {
+        "level": 5,
+        "text": "Residual Dropout"
+      },
+      {
+        "level": 5,
+        "text": "Label Smoothing"
+      },
+      {
+        "level": 2,
+        "text": "6 Results"
+      },
+      {
+        "level": 3,
+        "text": "6.1 Machine Translation"
+      },
+      {
+        "level": 3,
+        "text": "6.2 Model Variations"
+      },
+      {
+        "level": 3,
+        "text": "6.3 English Constituency Parsing"
+      },
+      {
+        "level": 2,
+        "text": "7 Conclusion"
+      },
+      {
+        "level": 5,
+        "text": "Acknowledgements"
+      },
+      {
+        "level": 2,
+        "text": "References"
+      },
+      {
+        "level": 2,
+        "text": "Attention Visualizations"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "id": "07",
+    "url": "https://www.postgresql.org/docs/17/transaction-iso.html",
+    "finalUrl": "https://www.postgresql.org/docs/17/transaction-iso.html",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "fetchedAt": "2026-11-16T12:50:12.406Z",
+    "elapsedMs": 3647,
+    "htmlBytes": 47685,
+    "title": "13.2. Transaction Isolation",
+    "siteName": "PostgreSQL Documentation",
+    "publishedTime": "2026-11-12T14:06:04.993518",
+    "fullChars": 23435,
+    "range": null,
+    "unitChars": 23435,
+    "unitSha256": "427a4e58c5a10be08f2ead970477dd42f58261574cd20c6248d5b5eec210e4ff",
+    "counts": {
+      "math": 0,
+      "images": 0,
+      "codeBlocks": 7,
+      "tables": 1
+    },
+    "headings": [
+      {
+        "level": 3,
+        "text": "Important"
+      },
+      {
+        "level": 3,
+        "text": "13.2.1. Read Committed Isolation Level #"
+      },
+      {
+        "level": 3,
+        "text": "13.2.2. Repeatable Read Isolation Level #"
+      },
+      {
+        "level": 3,
+        "text": "Note"
+      },
+      {
+        "level": 3,
+        "text": "13.2.3. Serializable Isolation Level #"
+      }
+    ],
+    "warnings": []
+  }
+]

@@ -1,0 +1,155 @@
+{
+  "material_id": "05",
+  "questions": [
+    {
+      "id": "05-Q1",
+      "angle": "condition",
+      "question": "サービス間のリモート呼び出しに設定するタイムアウト値を、長すぎる値にした場合と短すぎる値にした場合とで、それぞれどんな問題が起きるか。",
+      "key_points": [
+        "長すぎると、クライアントが待っている間もリソースが使われ続け、タイムアウトを置く意味が薄れる。",
+        "短すぎると、リトライされるリクエストが増えて、バックエンドへのトラフィックと遅延が増える。",
+        "短すぎると、バックエンドの遅延が少し増えただけで全リクエストがリトライされ、全面的な停止につながりうる。"
+      ],
+      "evidence": [
+        {
+          "quote": "Setting a timeout too high reduces its usefulness, because resources are still consumed while the client waits for the timeout.",
+          "heading": "Timeouts",
+          "supports": [1]
+        },
+        {
+          "quote": "Increased traffic on the backend and increased latency because too many requests are retried.",
+          "heading": "Timeouts",
+          "supports": [2]
+        },
+        {
+          "quote": "Increased small backend latency leading to a complete outage, because all requests start being retried.",
+          "heading": "Timeouts",
+          "supports": [3]
+        }
+      ]
+    },
+    {
+      "id": "05-Q2",
+      "angle": "condition",
+      "question": "失敗したリクエストをクライアントがリトライする仕組みは、失敗の原因がまれな障害や一時的な障害である場合と、サーバーの過負荷である場合とで、結果がどう変わるか。",
+      "key_points": [
+        "まれな障害や一時的な障害なら、リトライされるリクエストの総数が少ないので、見かけの可用性を上げる取引として割に合う。",
+        "過負荷が原因なら、リトライが負荷をさらに増やして状況を大きく悪化させる。",
+        "過負荷のときは、元の問題が解消したあとも負荷が高いまま続き、復旧が遅れることがある。"
+      ],
+      "evidence": [
+        {
+          "quote": "This is because the overall number of retried requests is small, and the tradeoff of increasing apparent availability works well.",
+          "heading": "Retries and backoff",
+          "supports": [1]
+        },
+        {
+          "quote": "When failures are caused by overload, retries that increase load can make matters significantly worse. They can even delay recovery by keeping the load high long after the original issue is resolved.",
+          "heading": "Retries and backoff",
+          "supports": [2, 3]
+        }
+      ]
+    },
+    {
+      "id": "05-Q3",
+      "angle": "why",
+      "question": "リトライの間隔を指数的に延ばす指数バックオフで、待ち時間に上限を設けるのはなぜか。また、上限を設けたことで新たに生じる問題と、その対処は何か。",
+      "key_points": [
+        "指数的に延びる待ち時間はすぐに非常に長くなるので、リトライが長引きすぎないように上限で止める。",
+        "上限に達すると、すべてのクライアントが上限の間隔でリトライし続ける状態になる。",
+        "対処として、クライアントがリトライする回数を制限し、その結果の失敗を呼び出しの流れのより手前で扱う。"
+      ],
+      "evidence": [
+        {
+          "quote": "Exponential backoff can lead to very long backoff times, because exponential functions grow quickly. To avoid retrying for too long, implementations typically cap their backoff to a maximum value.",
+          "heading": "Retries and backoff",
+          "supports": [1]
+        },
+        {
+          "quote": "Now all of the clients are retrying constantly at the capped rate.",
+          "heading": "Retries and backoff",
+          "supports": [2]
+        },
+        {
+          "quote": "In almost all cases, our solution is to limit the number of times that the client retries, and handle the resulting failure earlier in the service-oriented architecture.",
+          "heading": "Retries and backoff",
+          "supports": [3]
+        }
+      ]
+    },
+    {
+      "id": "05-Q4",
+      "angle": "compare",
+      "question": "サービス呼び出しが何層にも重なる分散システムで、各層がそれぞれ独立にリトライする方式と、最上位の層だけでリトライする方式を比べると、それぞれ何が問題になるか。",
+      "key_points": [
+        "各層が独立にリトライすると、リトライ回数が層ごとに掛け算で増え、最下層への負荷が膨れ上がって回復しにくくなる。",
+        "最上位の層だけでリトライすると、それまでの呼び出しで済んでいた処理が無駄になり、効率が落ちる。",
+        "コストの低い操作については、スタックの中の1か所だけでリトライするのが基本方針になる。"
+      ],
+      "evidence": [
+        {
+          "quote": "If each layer retries independently, the load on the database will increase 243x, making it unlikely to ever recover. This is because the retries at each layer multiply -- first three tries, then nine tries, and so on.",
+          "heading": "Retries and backoff",
+          "supports": [1]
+        },
+        {
+          "quote": "On the contrary, retrying at the highest layer of the stack may waste work from previous calls, which reduces efficiency.",
+          "heading": "Retries and backoff",
+          "supports": [2]
+        },
+        {
+          "quote": "In general, for low-cost control-plane and data-plane operations, our best practice is to retry at a single point in the stack.",
+          "heading": "Retries and backoff",
+          "supports": [3]
+        }
+      ]
+    },
+    {
+      "id": "05-Q5",
+      "angle": "why",
+      "question": "過負荷や競合が原因の失敗に対して、リトライの間隔を空けるバックオフだけでは期待したほど効果が出ないのはなぜか。ジッターはそれをどう補うか。",
+      "key_points": [
+        "失敗した呼び出しがそろって同じ時点まで待つと、リトライが同時に届いて再び競合や過負荷を起こす。",
+        "ジッターは待ち時間にランダムなずれを加えて、リトライを時間的に分散させる。"
+      ],
+      "evidence": [
+        {
+          "quote": "If all the failed calls back off to the same time, they cause contention or overload again when they are retried.",
+          "heading": "Jitter",
+          "supports": [1]
+        },
+        {
+          "quote": "Jitter adds some amount of randomness to the backoff to spread the retries around in time.",
+          "heading": "Jitter",
+          "supports": [2]
+        }
+      ]
+    }
+  ],
+  "not_generated": [
+    {
+      "topic": "タイムアウト値の決め方（許容する誤タイムアウト率と下流サービスのレイテンシのパーセンタイル）",
+      "reason": "0.1% や p99.9 といった設定値を答えさせる問いになりやすく、方針1に反するため。"
+    },
+    {
+      "topic": "SO_RCVTIMEO や DNS・TLS ハンドシェイクなど、タイムアウト実装上の落とし穴",
+      "reason": "本文では欠点の中身が説明されておらず、根拠のある要点を作れない細部であるため。"
+    },
+    {
+      "topic": "サーキットブレーカーとトークンバケットによるローカルなリトライ制限の比較",
+      "reason": "比較の問いにはできるが、リトライの補足的な論点であり、細部で問いの数を増やすことになるため見送った。"
+    },
+    {
+      "topic": "副作用のある API のリトライと冪等性",
+      "reason": "本文の説明が短く、問いにすると「冪等性」という用語を答えさせる形になりやすいため。"
+    },
+    {
+      "topic": "定期ジョブのジッターを毎回ランダムにせず、ホストごとに同じ値にする理由",
+      "reason": "理由を問う形にはできるが、ジッターの中心的な仕組みではなく運用上の細部と判断したため。"
+    }
+  ],
+  "self_report": {
+    "unit_fit": "タイムアウト、リトライとバックオフ、ジッターという3つの中心があり、1つの読む範囲としてはやや広いが、各節が独立しているので節ごとに問いを作ることはできた。",
+    "difficulties": "リトライの節に論点が多く、どこまでが中心でどこからが細部かの線引きに迷った。また「何が起きるか」と対処をまとめて問うと、問いの文が答えの構造を示唆しやすく、方針8との両立が難しかった。"
+  }
+}

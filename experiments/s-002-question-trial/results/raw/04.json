@@ -1,0 +1,150 @@
+{
+  "material_id": "04",
+  "questions": [
+    {
+      "id": "04-Q1",
+      "angle": "why",
+      "question": "タイムアウト付きの分散ロック（リース）を取得してから共有ストレージのファイルを読み、変更して書き戻すクライアントは、ロックサービス自体が完全に正しく動いていても、データを壊すことがあるのはなぜか。また、書き戻す直前にロックの期限を確認する処理を足しても防げないのはなぜか。",
+      "key_points": [
+        "ロックを持ったままクライアントが長く停止すると、リースが切れたことに気づかないまま書き込みを続けてしまう。",
+        "停止は期限の確認と書き込みの間でも起こり得るので、直前の確認では防げない。",
+        "クライアントが止まらなくても、書き込み要求がネットワーク上で遅れ、リースが切れた後にストレージへ届くことがある。"
+      ],
+      "evidence": [
+        {
+          "quote": "However, if the GC pause lasts longer than the lease expiry period, and the client doesn’t realise that it has expired, it may go ahead and make some unsafe change.",
+          "heading": "Protecting a resource with a lock",
+          "supports": [1]
+        },
+        {
+          "quote": "Remember that GC can pause a running thread at any point, including the point that is maximally inconvenient for you (between the last check and the write operation).",
+          "heading": "Protecting a resource with a lock",
+          "supports": [2]
+        },
+        {
+          "quote": "This means that an application process may send a write request, and it may reach the storage server a minute later when the lease has already expired.",
+          "heading": "Protecting a resource with a lock",
+          "supports": [3]
+        }
+      ]
+    },
+    {
+      "id": "04-Q2",
+      "angle": "why",
+      "question": "分散ロックで守った資源への書き込みにフェンシングトークンを使うと、リースが切れたクライアントから遅れて届いた書き込みを防げるのはなぜか。その仕組みが成り立つために、ロックサービスとストレージ側にはそれぞれ何が求められるか。",
+      "key_points": [
+        "ロックを取得するたびに大きくなる番号を受け取り、ストレージへの書き込み要求に毎回その番号を添える。",
+        "ストレージ側が、すでに処理した番号より小さい番号の書き込みを拒否する役割を担う。",
+        "前提として、ロックサービスが厳密に単調増加する番号を発行できなければならない。"
+      ],
+      "evidence": [
+        {
+          "quote": "The fix for this problem is actually pretty simple: you need to include a fencing token with every write request to the storage service. In this context, a fencing token is simply a number that increases (e.g. incremented by the lock service) every time a client acquires the lock.",
+          "heading": "Making the lock safe with fencing",
+          "supports": [1]
+        },
+        {
+          "quote": "However, the storage server remembers that it has already processed a write with a higher token number (34), and so it rejects the request with token 33.",
+          "heading": "Making the lock safe with fencing",
+          "supports": [2]
+        },
+        {
+          "quote": "And provided that the lock service generates strictly monotonically increasing tokens, this makes the lock safe.",
+          "heading": "Making the lock safe with fencing",
+          "supports": [3]
+        }
+      ]
+    },
+    {
+      "id": "04-Q3",
+      "angle": "compare",
+      "question": "プロセスの停止、ネットワークの遅延、時計の狂いが起きたとき、非同期モデルを前提に設計された合意アルゴリズム（Raft、Paxos など）と Redis の Redlock とでは、保証されるものがどう違うか（Martin Kleppmann による 2016 年の Redlock 批判の議論に基づいて答える）。",
+      "key_points": [
+        "非同期モデルのアルゴリズムは、タイミングについて何も仮定せずに安全性を保ち、タイムアウトに左右されるのは処理が進むかどうかだけである。",
+        "Redlock は、キーの期限切れまでの時間がほぼ正確で、ネットワーク遅延やプロセス停止が期限より十分短いという仮定に、安全性そのものが依存している。",
+        "その仮定が破れると Redlock は、あるクライアントのリースが切れる前に別のクライアントへリースを与えてしまうことがある。"
+      ],
+      "evidence": [
+        {
+          "quote": "For algorithms in the asynchronous model this is not a big problem: these algorithms generally ensure that their safety properties always hold, without making any timing assumptions [12]. Only liveness properties depend on timeouts or some other failure detector.",
+          "heading": "Using time to solve consensus",
+          "supports": [1]
+        },
+        {
+          "quote": "Its safety depends on a lot of timing assumptions: it assumes that all Redis nodes hold keys for approximately the right length of time before expiring; that the network delay is small compared to the expiry duration; and that process pauses are much shorter than the expiry duration.",
+          "heading": "Using time to solve consensus",
+          "supports": [2]
+        },
+        {
+          "quote": "As soon as those timing assumptions are broken, Redlock may violate its safety properties, e.g. granting a lease to one client before another has expired.",
+          "heading": "The synchrony assumptions of Redlock",
+          "supports": [3]
+        }
+      ]
+    },
+    {
+      "id": "04-Q4",
+      "angle": "compare",
+      "question": "Martin Kleppmann による 2016 年の Redlock 批判に沿って考えると、分散ロックの目的が効率化（同じ作業の重複を避ける）である場合と、正しさの保証である場合とで、単一の Redis インスタンスによるロックと Redlock（5 台の Redis での多数決）はそれぞれ何を得て何を失うか。",
+      "key_points": [
+        "効率化が目的なら、ロックが失敗しても重複作業のわずかな損で済むので、単一インスタンスが時々ロックを失っても問題にならない。",
+        "効率化が目的の場合に Redlock を使うと、5 台の運用と多数決の費用と複雑さを払うだけで、見合う利得がない。",
+        "正しさが目的の場合、Redlock は安全性が足りず、合意システムを使ったうえで資源へのアクセスにフェンシングトークンを強制する必要がある。"
+      ],
+      "evidence": [
+        {
+          "quote": "If the lock fails and two nodes end up doing the same piece of work, the result is a minor increase in cost (you end up paying 5 cents more to AWS than you otherwise would have) or a minor inconvenience (e.g. a user ends up getting the same email notification twice).",
+          "heading": "What are you using that lock for?",
+          "supports": [1]
+        },
+        {
+          "quote": "But if you’re only using the locks as an efficiency optimization, and the crashes don’t happen too often, that’s no big deal.",
+          "heading": "What are you using that lock for?",
+          "supports": [1]
+        },
+        {
+          "quote": "I will argue that if you are using locks merely for efficiency purposes, it is unnecessary to incur the cost and complexity of Redlock, running 5 Redis servers and checking for a majority to acquire your lock.",
+          "heading": "What are you using that lock for?",
+          "supports": [2]
+        },
+        {
+          "quote": "I think the Redlock algorithm is a poor choice because it is “neither fish nor fowl”: it is unnecessarily heavyweight and expensive for efficiency-optimization locks, but it is not sufficiently safe for situations in which correctness depends on the lock.",
+          "heading": "Conclusion",
+          "supports": [2, 3]
+        },
+        {
+          "quote": "On the other hand, if you need locks for correctness, please don’t use Redlock. Instead, please use a proper consensus system such as ZooKeeper, probably via one of the Curator recipes that implements a lock.",
+          "heading": "Conclusion",
+          "supports": [3]
+        },
+        {
+          "quote": "And please enforce use of fencing tokens on all resource accesses under the lock.",
+          "heading": "Conclusion",
+          "supports": [3]
+        }
+      ]
+    }
+  ],
+  "not_generated": [
+    {
+      "topic": "Redlock がフェンシングトークンを生成できない理由（乱数値では単調性がない、1 台のカウンタでは障害に弱い、など）",
+      "reason": "04-Q2 の成立条件（単調増加する番号の発行）と重なり、独立した問いにすると細部を問うことになるため。"
+    },
+    {
+      "topic": "5 台のノード A〜E と 2 つのクライアントで、時計のジャンプや GC 停止によって二重にロックが取られる具体的な手順",
+      "reason": "04-Q3 で問うたタイミング仮定への依存を例示する場面であり、手順を再現させる問いは細部の暗記になるため。"
+    },
+    {
+      "topic": "Redis がキーの期限切れに使う時刻取得の関数と、同期モデルの 3 つの性質の列挙",
+      "reason": "用語や名前を答えさせる問いになり、方針 1 に反するため。"
+    },
+    {
+      "topic": "時計を一切使わないと合意が不可能になること、ロック取得が合意を必要とすること",
+      "reason": "本文では括弧書きで文献を示して触れているだけで理由が説明されておらず、本文だけを根拠に要点を書けないため。"
+    }
+  ],
+  "self_report": {
+    "unit_fit": "記事 1 本を丸ごと読む範囲としており、ロックの目的の区別、停止と遅延による破綻、フェンシング、タイミング仮定という中心が 4 つあるため、問いも 4 問になった。分量としては読み切れるが、中心が複数ある範囲である。",
+    "difficulties": "本文に Redlock の対象バージョンが書かれていないため、方針 6 は公開年（2016 年）と論者名を問いの文に入れることで代用した。04-Q4 は選択肢となる方式名を問いに出さないと何の比較か分からず、方針 8（答えの手がかりを含めない）との兼ね合いに迷った。"
+  }
+}

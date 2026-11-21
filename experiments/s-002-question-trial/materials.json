@@ -1,0 +1,100 @@
+[
+  {
+    "id": "01",
+    "slug": "zenn-postgres-mvcc",
+    "kind": "技術記事",
+    "lang": "ja",
+    "site": "Zenn",
+    "url": "https://zenn.dev/calloc134/articles/postgres-internal-mvcc-index",
+    "fetchNotes": [
+      "取得と抽出はそのまま通った。HTML 31万バイトから本文1.9万字",
+      "図12枚は alt だけが残り、中身は落ちる",
+      "末尾の「参考文献」はリンクカード（埋め込み）で書かれていて、抽出すると見出しだけが残りリンク先が消える"
+    ]
+  },
+  {
+    "id": "02",
+    "slug": "qiita-go-channel-runtime",
+    "kind": "技術記事",
+    "lang": "ja",
+    "site": "Qiita",
+    "url": "https://qiita.com/zreactor/items/1cef0c7ba31aac5402bb",
+    "fetchNotes": [
+      "取得と抽出はそのまま通った",
+      "見出しが h3〜h5 で書かれていて h2 がない。見出しの階層を読む範囲の指定に使うなら、レベルの数字ではなく出現順で扱う必要がある",
+      "コードブロックが18個あり、本文の説明がコードに寄りかかっている"
+    ]
+  },
+  {
+    "id": "03",
+    "slug": "classmethod-go-runtime-goroutine",
+    "kind": "技術記事",
+    "lang": "ja",
+    "site": "DevelopersIO（企業ブログ）",
+    "url": "https://dev.classmethod.jp/articles/go-runtime-goroutine/",
+    "fetchNotes": [
+      "取得と抽出はそのまま通った。HTML 43万バイトの大半はスクリプトで、本文は7千字",
+      "図17枚の alt が「スクリーンショット 日時」で、図が示している内容はテキストに残らない。GMP の動きの説明と trace の結果が図に寄っている"
+    ]
+  },
+  {
+    "id": "04",
+    "slug": "kleppmann-distributed-locking",
+    "kind": "技術記事",
+    "lang": "en",
+    "site": "個人ブログ",
+    "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+    "fetchNotes": [
+      "静的な HTML で、取得と抽出はそのまま通った",
+      "末尾の参考文献一覧と、メール購読の案内が本文として残る",
+      "タイトルにサイト名が付く（「— Martin Kleppmann’s blog」）"
+    ]
+  },
+  {
+    "id": "05",
+    "slug": "aws-timeouts-retries-jitter",
+    "kind": "技術記事",
+    "lang": "en",
+    "site": "Amazon Builders' Library",
+    "url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+    "fetchNotes": [
+      "aws.amazon.com の URL が builder.aws.com の別の URL に転送される。同じ資料かどうかの判定は、登録された URL ではなく転送後の URL か canonical で行う必要がある",
+      "見出し「Introduction」の下が空になる（導入文が見出しの外に出ている）",
+      "公開日と更新日の行が本文の先頭に混ざる"
+    ]
+  },
+  {
+    "id": "06",
+    "slug": "arxiv-attention",
+    "kind": "論文",
+    "lang": "en",
+    "site": "arXiv（HTML版）",
+    "url": "https://arxiv.org/html/1706.03762v7",
+    "range": {
+      "from": "3 Model Architecture",
+      "until": "5 Training"
+    },
+    "fetchNotes": [
+      "数式116個は MathML で、そのままテキスト化すると記号が重複して崩れる。math 要素の alttext 属性（LaTeX）を取り出して対応した",
+      "番号付きの数式は表のレイアウトで組まれていて、抽出すると表の行として出てくる",
+      "ページ全体は3.9万字。3章と4章を見出しで切り出して1.4万字にした（開始と終了の見出しを手で指定）",
+      "図3枚は中身が落ちる",
+      "Table 1（層の種類ごとの計算量と経路長の比較）は、Readability が表の本体を落とし、キャプションだけが残った。4章の比較はこの表に依存している"
+    ]
+  },
+  {
+    "id": "07",
+    "slug": "postgres17-transaction-isolation",
+    "kind": "公式ドキュメント",
+    "lang": "en",
+    "site": "PostgreSQL 17 Documentation",
+    "url": "https://www.postgresql.org/docs/17/transaction-iso.html",
+    "fetchNotes": [
+      "静的な HTML で、取得と抽出はそのまま通った",
+      "ページの題（13.2. Transaction Isolation）が本文から落ちる。Readability がタイトルを本文と別に返すため",
+      "見出しの末尾にアンカー用の「#」が残る",
+      "用語の定義（dl 要素）が段落に平たくなる",
+      "対象バージョンは本文になく、URL の /17/ から取るしかない"
+    ]
+  }
+]

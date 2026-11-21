@@ -1,0 +1,1916 @@
+[
+  {
+    "id": "01",
+    "questions": [
+      {
+        "id": "01-Q1",
+        "angle": "why",
+        "question": "PostgreSQL が行を更新するとき、既存のデータを上書きせずに古い版を残しておく作りになっているのはなぜか。また、その作りが生む負担はどう解消されるか。",
+        "key_points": [
+          "同じ行の版が複数あることで、読み取りはロックなしで他のトランザクションと同時に進められる。",
+          "ロックで整合性を守る方式だと読み取りに待ちが生じて性能が落ちうるので、それを避けている。",
+          "古い版は場所を取り続けるため、要らなくなった時点で VACUUM が消して領域を使い回す。"
+        ],
+        "evidence": [
+          {
+            "quote": "複数の物理的なバージョンを保持することで、ロックなどの仕組みなしに",
+            "heading": "MVCC (Multi-Version Concurrency Control) とは",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 33,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "MVCC (Multi-Version Concurrency Control) とは",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "複数のトランザクションが同時にデータ読み取りを行うことが出来ます。",
+            "heading": "MVCC (Multi-Version Concurrency Control) とは",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 33,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "MVCC (Multi-Version Concurrency Control) とは",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "一方で読み取りの待ちが発生し、パフォーマンスが低下する可能性があります。",
+            "heading": "MVCC (Multi-Version Concurrency Control) とは",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 36,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "MVCC (Multi-Version Concurrency Control) とは",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "残った古いバージョンの物理タプルは領域を占有し続けるため、",
+            "heading": "追記型アーキテクチャとは",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 29,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "追記型アーキテクチャとは",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "不要になった時点で VACUUM という仕組みによって削除され、領域が再利用されます。",
+            "heading": "追記型アーキテクチャとは",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 43,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "追記型アーキテクチャとは",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "01-Q2",
+        "angle": "compare",
+        "question": "PostgreSQL の Read Committed と Repeatable Read は、実装上どの一点が違うのか。その違いによって、1つのトランザクションの中で同じデータを2回読んだときの結果はそれぞれどうなるか。",
+        "key_points": [
+          "違いはスナップショットを取る時点で、Read Committed は文ごとに取り直し、Repeatable Read は最初の文の開始時に1回だけ取る。",
+          "Read Committed では、2回の読み取りの間に他のトランザクションがコミットすると、2回目の結果が1回目と変わりうる。",
+          "Repeatable Read では最初に取ったスナップショットを使い続けるので、他のトランザクションがコミットしても結果は変わらない。"
+        ],
+        "evidence": [
+          {
+            "quote": "スナップショットを取るタイミングが「文ごと」か「トランザクションごと」か にあります。",
+            "heading": "2 つの違い",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 43,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "2 つの違い",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Repeatable Read ではトランザクション開始後の最初の文が開始したタイミングでスナップショットを取得します。",
+            "heading": "2 つの違い",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 60,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "2 つの違い",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "X トランザクションがコミットされた後に取得した 2 回目で、異なる結果が返ってくる可能性があります。",
+            "heading": "「Read Committed」",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 51,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "「Read Committed」",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Repeatable Read ではトランザクション開始後に取得したスナップショットが使われ続けるため、",
+            "heading": "2 つの違い",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 52,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "2 つの違い",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "01-Q3",
+        "angle": "why",
+        "question": "PostgreSQL のスナップショットは、取得時に進行中だったトランザクションの一覧に加えて、トランザクション ID の下限と上限にあたる値も持っている。一覧だけで済ませず、この2つの値を持つのはなぜか。",
+        "key_points": [
+          "一覧だけに頼ると、すべてのトランザクションを1件ずつ判定することになり効率が悪い。",
+          "下限より小さい ID は完了済み、上限以上の ID は未完了で見えないものと、一覧を調べずに決められる。",
+          "一覧を調べるのは下限と上限の間にある ID だけで済み、判定の対象が大きく減る。"
+        ],
+        "evidence": [
+          {
+            "quote": "しかし、この方法だとすべてのトランザクションについて判定を行う必要があり、非効率です。",
+            "heading": "トランザクションの可視性チェックアルゴリズム",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 43,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "トランザクションの可視性チェックアルゴリズム",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "xmin 未満のトランザクションはすべて完了していると考えられる",
+            "heading": "トランザクションの可視性チェックアルゴリズム",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 32,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "トランザクションの可視性チェックアルゴリズム",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "xmax 以降のトランザクションは、すべて未完了・不可視 (= 実行中 or まだ開始すらしていない) と考えられる",
+            "heading": "トランザクションの可視性チェックアルゴリズム",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 58,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "トランザクションの可視性チェックアルゴリズム",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "XID が xip に含まれている場合、未完了と考えられるため、不可視",
+            "heading": "トランザクションの可視性チェックアルゴリズム",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 35,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "トランザクションの可視性チェックアルゴリズム",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "これにより、判定すべきトランザクション数を大幅に削減し、処理を高速化しています。",
+            "heading": "トランザクションの可視性チェックアルゴリズム",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 40,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "トランザクションの可視性チェックアルゴリズム",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "01-Q4",
+        "angle": "condition",
+        "question": "PostgreSQL の MVCC では、同じ論理行に対して物理タプルが複数あるとき、あるスナップショットから読めるタプルはどういう条件で決まるか。他のトランザクションが行を更新したがまだコミットしていない場合、更新前のタプルと更新後のタプルはそれぞれどう扱われるか。",
+        "key_points": [
+          "タプルが読めるのは、それを挿入したトランザクションがスナップショットから見え、かつ削除・更新したトランザクションが見えないときである。",
+          "更新前のタプルは、更新したトランザクションがまだ見えないので、読めるままになる。",
+          "更新後のタプルは、それを挿入したトランザクションがまだ見えないので、読めない。"
+        ],
+        "evidence": [
+          {
+            "quote": "挿入(A)が見えて 削除 or 更新(B)が見えなければ、そのタプルは可視である、となります。",
+            "heading": "物理タプルの可視性チェックアルゴリズム",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 47,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "物理タプルの可視性チェックアルゴリズム",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "不可視の場合、タプルは可視 (他人のトランザクションによって削除 or 更新されたが、そのスナップショットから見て変更がコミットされていないため)",
+            "heading": "B. 削除 or 更新側のタプル可視性チェック (t_xmax について)",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 73,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "B. 削除 or 更新側のタプル可視性チェック (t_xmax について)",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "不可視の場合、タプルは不可視 (他人のトランザクションによって挿入されたが、そのスナップショットから見て変更がコミットされていないため)",
+            "heading": "A. 挿入側のタプル可視性チェック (t_xmin について)",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 68,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "A. 挿入側のタプル可視性チェック (t_xmin について)",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      }
+    ],
+    "notGenerated": [
+      {
+        "topic": "PostgreSQL のインデックスとデータの分離を、MySQL (InnoDB) のクラスタ化インデックスと比べる問い",
+        "reason": "本文は方針が違うと述べるだけで、分離によって何を得て何を失うかを書いておらず、クラスタ化インデックスの解説も割愛されているため、本文だけでは模範解答の根拠がそろわない。"
+      },
+      {
+        "topic": "トランザクション ID とは別にコマンド ID を持ち、自分のトランザクション内の未コミットの変更を見分ける理由",
+        "reason": "理由は本文に書かれているが、可視性チェックの中の一分岐にあたり、中心となる仕組みの問い（01-Q4）に対して細部になるため、問いの数を増やさない方針に従って外した。"
+      }
+    ],
+    "selfReport": {
+      "unit_fit": "記事1本を丸ごと1つの範囲にしているため、追記型と MVCC、分離モデル、スナップショットによる判定、タプルの可視性と中心が4つあり、2問には収まらなかった。データ構造の節と可視性チェックの節で区切ったほうが問いを絞りやすい。",
+      "difficulties": "方針6の対象バージョンは本文に記載がなく、分離モデルの保証を問う 01-Q2 に含められなかった。また本文は1文が複数行に折り返されているため、1行に収める条件では quote が目安の40字より短い断片になりやすく、1つの要点に2つの quote を当てた箇所がある。"
+    }
+  },
+  {
+    "id": "02",
+    "questions": [
+      {
+        "id": "02-Q1",
+        "angle": "why",
+        "question": "Goのチャンネルを介して2つのgoroutineが値を受け渡すとき、goroutine同士のメモリー安全性はランタイムの実装上どのような仕組みで保たれているか。",
+        "key_points": [
+          "送信ではチャンネル内部のバッファへ、受信では受け取り側の変数へと、どちらの操作でも値をコピーして渡す。",
+          "2つのgoroutineが共有するメモリーはチャンネル内部のバッファだけで、そのバッファはmutexのロックで保護されている。"
+        ],
+        "evidence": [
+          {
+            "quote": "チャンネルから読み込み、チャンネルへの書き込み時ともにメモリーのコピー（上記の2.)が行われるので、hchanのmutexによって保護されているバッファ以外、二つのgoroutineが共有するメモリーがない。",
+            "heading": "Case 1) synchronousで1対1の読み込み・書き込みの時の処理",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 104,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Case 1) synchronousで1対1の読み込み・書き込みの時の処理",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "hchanのバッファに値を追加してくれる（実際にバッファーのメモリー中にのコピーを行う）",
+            "heading": "Case 1) synchronousで1対1の読み込み・書き込みの時の処理",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 44,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Case 1) synchronousで1対1の読み込み・書き込みの時の処理",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "02-Q2",
+        "angle": "condition",
+        "question": "バッファ付きのGoチャンネルでバッファが満杯のときに送信しようとしたgoroutineは、ランタイム内部でどのように待たされ、何をきっかけにどう再開されるか。また、そのgoroutineを実行していたOSスレッドはどうなるか。",
+        "key_points": [
+          "送信側は、自分自身と送りたい値を指す待ち情報を作ってチャンネルの送信待ち行列に登録し、スケジューラーに実行の中断を伝える。",
+          "受信するgoroutineが現れると、待たされていた値がバッファに入れられ、送信側は実行可能な状態としてスケジューラーに戻される。",
+          "止まるのはgoroutineだけで、OSスレッドは解放されて別のgoroutineの実行に回る。"
+        ],
+        "evidence": [
+          {
+            "quote": "sudog型のstructをallocateする→goroutineの待ち状況・再開条件をsudog型を使ってチャンネルの中に書き込み→実行をブロックする旨をスケジューラーくんに伝えます。",
+            "heading": "Case 2) bufferの容量がいっぱいになった時の処理",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 94,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Case 2) bufferの容量がいっぱいになった時の処理",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "sudogを作成しチャンネルのsendq(送り待ちのqueue)のリストに追加することで、チャンネルに対してrecvを行うGoRoutineが現れた時に、gの処理を再開できます。",
+            "heading": "Case 2) bufferの容量がいっぱいになった時の処理",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 89,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Case 2) bufferの容量がいっぱいになった時の処理",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "チャンネルのバッファがいっぱいで更にsendqにも値が入っている場合、sendqにあるsudogsgを外し、待っている値をバッファに追加する",
+            "heading": "Case 2) bufferの容量がいっぱいになった時の処理",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 70,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Case 2) bufferの容量がいっぱいになった時の処理",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "その後、待っていたgoroutineが実行可能になったことをgoreadyコールでスケジューラーに知らせます",
+            "heading": "Case 2) bufferの容量がいっぱいになった時の処理",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 54,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Case 2) bufferの容量がいっぱいになった時の処理",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "goparkシグナルでgoroutineが実行されていたOSのスレッドも解放され、スケジューラーのrunqueueから他のgoroutineを実行できます。",
+            "heading": "＊Goのスレッドについて",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 78,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "＊Goのスレッドについて",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "02-Q3",
+        "angle": "compare",
+        "question": "Goのチャンネルで、受信側のgoroutineが先に待っている状態で送信が行われる場合、値の受け渡しはバッファを経由する通常の流れとどう違うか。その違いによって何が節約され、goroutine間のメモリーの扱いのどんな原則に対する例外になるか。",
+        "key_points": [
+          "送信側が、待っている受信側の変数のメモリー（受信側goroutineのスタック）へ値を直接書き込む。",
+          "バッファを経由しないので、メモリーコピーとロック処理がそれぞれ1回ずつ減る。",
+          "goroutineが他のgoroutineのスタックを読み書きするのは、チャンネルの処理の中だけに限られている。"
+        ],
+        "evidence": [
+          {
+            "quote": "mainが値をバッファー内に書き込む→スケジューラーがprocessNumberをresume可能と判断するか、受け取り変数のメモリー位置に直接値を書き込む（mainがprocessNumberのスタックに直接書き込む）",
+            "heading": "Case 3) bufferの中に値がないのに受け取りを待っている関数がある",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 110,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Case 3) bufferの中に値がないのに受け取りを待っている関数がある",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "受け取り待ちの変数がある時に、ロックを取得する必要なく、受け取り関数のメモリーに直接コピーをすることが可能なので、メモリーコピーとロック処理を一個減らすためのものだそうです。",
+            "heading": "チャンネルのgoroutine・メモリー安全性をなぜ担保できているか、実装から見える",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 87,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "チャンネルのgoroutine・メモリー安全性をなぜ担保できているか、実装から見える",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "チャンネルでの処理以外、goroutineのスタック同士で読み込み・書き込みをすることはない",
+            "heading": "チャンネルのgoroutine・メモリー安全性をなぜ担保できているか、実装から見える",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 46,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "チャンネルのgoroutine・メモリー安全性をなぜ担保できているか、実装から見える",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      }
+    ],
+    "notGenerated": [
+      {
+        "topic": "バッファなしチャンネルとバッファありチャンネルの比較",
+        "reason": "本文の説明が2行ほどしかなく、何を得て何を失うかのうち失う側が書かれていないため、根拠のある要点を2つ以上立てられない。"
+      },
+      {
+        "topic": "チャンネルを関数にそのまま渡しても同じバッファを参照する理由",
+        "reason": "答えが「チャンネルの実体は内部構造体へのポインターだから」という1点に収まり、独立した要点に分けられない。用語を答えさせる問いに近くなる。"
+      },
+      {
+        "topic": "makechanでのメモリー確保の3通りの分岐",
+        "reason": "根拠がコード中のコメントだけで本文の説明がなく、中心の仕組みというより細部にあたる。"
+      },
+      {
+        "topic": "closeとselectの内部動作",
+        "reason": "本文が省略すると明記しており、それぞれ1行の箇条書きしかないため、理由や条件を問う根拠が足りない。"
+      }
+    ],
+    "selfReport": {
+      "unit_fit": "チャンネルの内部構造、ブロックと再開、直接コピーによる最適化と中心が3つあり、コードの抜粋も長いので、1つの読む範囲としてはやや広い。ただし説明文そのものは少なく、問いにできる箇所は限られた。",
+      "difficulties": "本文に対象のGoバージョンが書かれていないため、実装の挙動を問う文にバージョンを含められなかった。また、送信待ちの値がある場合の直接コピーの説明が箇所によって食い違って読めるので、Q3は受信待ちのケースに絞り、誤記の多い文をそのまま引用することになった。"
+    }
+  },
+  {
+    "id": "03",
+    "questions": [
+      {
+        "id": "03-Q1",
+        "angle": "why",
+        "question": "Go のランタイムでは、ある goroutine が I/O 待ちなどでブロックされても、同じ P のキューに積まれている他の goroutine の実行が止まらない。G・M・P の関係から、なぜそうなるのかを説明せよ。",
+        "key_points": [
+          "G がブロックされると、P はその G を実行していた M（OS スレッド）を自分から切り離す。",
+          "P は空いている別の M を付け直し、キューにある次の G をその M で実行する。"
+        ],
+        "evidence": [
+          {
+            "quote": "GがブロックされるとPは現在のMをデタッチし、空いているMを新たにアタッチします。これによりブロック中でも、キューに溜まっている次のGの実行を継続できます。",
+            "heading": "goroutineにおける 3つの概念 GMP",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 78,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "goroutineにおける 3つの概念 GMP",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "03-Q2",
+        "angle": "condition",
+        "question": "Go で 2 つの goroutine を同時に走らせるプログラムについて、GOMAXPROCS を 1 から 2 に増やしたとき、各 goroutine が「CPU を使わずに待つだけ（I/O 相当）」の場合と「CPU を使い続ける計算」の場合とで、全体の実行時間の変わり方はどう違うか。理由とあわせて説明せよ。",
+        "key_points": [
+          "待つだけの処理では、P の数を増やしても全体の実行時間は変わらない。",
+          "待機に入った M の代わりに空いている M で次のタスクを進められるので、P が 1 つでも 2 つの待ち時間が重なるからである。",
+          "CPU を使い続ける処理では、2 つの P がそれぞれ別の G を実行できるので、全体の実行時間がおよそ半分になる。"
+        ],
+        "evidence": [
+          {
+            "quote": "これは、GMPが正しく機能している証拠と言えます。PはMが待機中になった時、空いているMで次のタスクを実行します。そのため、GOMAXPROCSの数は関係なく並行して処理を進めることができ、実行時間には差が生まれないという結果になりました。",
+            "heading": "I/O処理の場合",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 120,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "I/O処理の場合",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "GOMAXPROCS が2の場合はPが2つ存在し、それぞれがGを実行するため、実行時間は半分になったということです。",
+            "heading": "CPU処理の場合",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 58,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "CPU処理の場合",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "03-Q3",
+        "angle": "condition",
+        "question": "Go で P が 1 つだけ（GOMAXPROCS=1）のとき、待機を挟まずに CPU を使い続ける goroutine を 2 つ起動すると、2 つはどういう順序で実行され、全体の実行時間はどうなるか。そうなる仕組みも説明せよ。",
+        "key_points": [
+          "片方が終わるのを待たずに、2 つの goroutine が交互に実行される。",
+          "スケジューラが、長く動き続けている G を強制的に別の G へ切り替えるからである（プリエンプション）。",
+          "2 つが同時に進むわけではないので、全体では 1 タスク分のおよそ 2 倍の時間がかかる。"
+        ],
+        "evidence": [
+          {
+            "quote": "GOMAXPROCS が1の場合は、Pは一つなのでキューにあるタスクを交互に実行します。",
+            "heading": "CPU処理の場合",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 44,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "CPU処理の場合",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "これは プリエンプション という仕組みがあるためです。プリエンプション とは Goスケジューラーが「このGは長く動きすぎ」と判断して、強制的にGを切り替える仕組みです。",
+            "heading": "CPU処理の場合",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 84,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "CPU処理の場合",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "結果、GOMAXPROCS が1の場合は、1つのタスクにかかる時間 x 2の時間がかかるというわけです。",
+            "heading": "CPU処理の場合",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 52,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "CPU処理の場合",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "03-Q4",
+        "angle": "why",
+        "question": "Go で GOMAXPROCS=2 にして CPU を使い続ける goroutine を 2 つ走らせると、それぞれの P が同じ goroutine を実行し続けることもあれば、P の間で担当する goroutine が入れ替わることもある。実行のたびにこの違いが生じるのはなぜか。",
+        "key_points": [
+          "プリエンプションで中断された G は、元の P のローカルキューに戻らず、P 全体で共有されるグローバルキューに入る。",
+          "手が空いた P はグローバルキューから G を取りにいくが、どの P が先に取るかはタイミングで決まる。",
+          "片方の G だけが中断されたときは元の P が取り直すが、両方がほぼ同時に中断されると 2 つの P が取り合いになり、入れ替わりが起こりうる。"
+        ],
+        "evidence": [
+          {
+            "quote": "プリエンプションが発生すると、GはPのローカルキューではなくグローバルキューに入ります。空になったPはグローバルキューからGを探しにいきますが、どのPが先に取得するかはタイミング次第です。",
+            "heading": "go tool trace で GMP の動きを見てみる",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 94,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "go tool trace で GMP の動きを見てみる",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "この時、P2 は G2 を引き続き実行中なため、グローバルキューには G1のみがある状態です。",
+            "heading": "go tool trace で GMP の動きを見てみる",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 47,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "go tool trace で GMP の動きを見てみる",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "ここからが異なる部分で、G1 と G2 にほぼ同時にプリエンプションが発生します。G1・G2 の両方がグローバルキューに入り、両方のキューが空になります。",
+            "heading": "go tool trace で GMP の動きを見てみる",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 77,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "go tool trace で GMP の動きを見てみる",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      }
+    ],
+    "notGenerated": [
+      {
+        "topic": "並行と並列の違い",
+        "reason": "用語の定義を答えさせる問いになりやすく、読む範囲の中心である GMP の動きは他の問いで扱えるため作らなかった。"
+      },
+      {
+        "topic": "go tool trace の STATS に表示される項目（Goroutines / Heap / Threads）",
+        "reason": "画面項目の名前と意味を答えさせる細部の問いになり、スクリーンショットの図が抽出されていないため作らなかった。"
+      },
+      {
+        "topic": "トレース上で Proc0 の開始がわずかに遅れる理由（おまけ）",
+        "reason": "本文でも「おまけ」として扱われている細部で、中心となる仕組みではないため作らなかった。"
+      }
+    ],
+    "selfReport": {
+      "unit_fit": "記事1本としては適切な長さだが、中心が「ブロック時の M の付け替え」「GOMAXPROCS と処理の種類」「プリエンプション」「グローバルキュー」の4つあり、問いが4問になった。",
+      "difficulties": "Q1 と Q2、Q2 と Q3 は同じ仕組みを別の角度から問うため要点が一部近くなり、独立性を保つのに迷った。「GOMAXPROCS が1の場合」などは本文上見出し記号がないため、heading は直近の # 付き見出しにした。対象の Go バージョンは本文に記載がなく、問いに含められなかった。"
+    }
+  },
+  {
+    "id": "04",
+    "questions": [
+      {
+        "id": "04-Q1",
+        "angle": "why",
+        "question": "タイムアウト付きの分散ロック（リース）を取得してから共有ストレージのファイルを読み、変更して書き戻すクライアントは、ロックサービス自体が完全に正しく動いていても、データを壊すことがあるのはなぜか。また、書き戻す直前にロックの期限を確認する処理を足しても防げないのはなぜか。",
+        "key_points": [
+          "ロックを持ったままクライアントが長く停止すると、リースが切れたことに気づかないまま書き込みを続けてしまう。",
+          "停止は期限の確認と書き込みの間でも起こり得るので、直前の確認では防げない。",
+          "クライアントが止まらなくても、書き込み要求がネットワーク上で遅れ、リースが切れた後にストレージへ届くことがある。"
+        ],
+        "evidence": [
+          {
+            "quote": "However, if the GC pause lasts longer than the lease expiry period, and the client doesn’t realise that it has expired, it may go ahead and make some unsafe change.",
+            "heading": "Protecting a resource with a lock",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 164,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Protecting a resource with a lock",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Remember that GC can pause a running thread at any point, including the point that is maximally inconvenient for you (between the last check and the write operation).",
+            "heading": "Protecting a resource with a lock",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 166,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Protecting a resource with a lock",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "This means that an application process may send a write request, and it may reach the storage server a minute later when the lease has already expired.",
+            "heading": "Protecting a resource with a lock",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 151,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Protecting a resource with a lock",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "04-Q2",
+        "angle": "why",
+        "question": "分散ロックで守った資源への書き込みにフェンシングトークンを使うと、リースが切れたクライアントから遅れて届いた書き込みを防げるのはなぜか。その仕組みが成り立つために、ロックサービスとストレージ側にはそれぞれ何が求められるか。",
+        "key_points": [
+          "ロックを取得するたびに大きくなる番号を受け取り、ストレージへの書き込み要求に毎回その番号を添える。",
+          "ストレージ側が、すでに処理した番号より小さい番号の書き込みを拒否する役割を担う。",
+          "前提として、ロックサービスが厳密に単調増加する番号を発行できなければならない。"
+        ],
+        "evidence": [
+          {
+            "quote": "The fix for this problem is actually pretty simple: you need to include a fencing token with every write request to the storage service. In this context, a fencing token is simply a number that increases (e.g. incremented by the lock service) every time a client acquires the lock.",
+            "heading": "Making the lock safe with fencing",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 281,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Making the lock safe with fencing",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "However, the storage server remembers that it has already processed a write with a higher token number (34), and so it rejects the request with token 33.",
+            "heading": "Making the lock safe with fencing",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 153,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Making the lock safe with fencing",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "And provided that the lock service generates strictly monotonically increasing tokens, this makes the lock safe.",
+            "heading": "Making the lock safe with fencing",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 112,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Making the lock safe with fencing",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "04-Q3",
+        "angle": "compare",
+        "question": "プロセスの停止、ネットワークの遅延、時計の狂いが起きたとき、非同期モデルを前提に設計された合意アルゴリズム（Raft、Paxos など）と Redis の Redlock とでは、保証されるものがどう違うか（Martin Kleppmann による 2016 年の Redlock 批判の議論に基づいて答える）。",
+        "key_points": [
+          "非同期モデルのアルゴリズムは、タイミングについて何も仮定せずに安全性を保ち、タイムアウトに左右されるのは処理が進むかどうかだけである。",
+          "Redlock は、キーの期限切れまでの時間がほぼ正確で、ネットワーク遅延やプロセス停止が期限より十分短いという仮定に、安全性そのものが依存している。",
+          "その仮定が破れると Redlock は、あるクライアントのリースが切れる前に別のクライアントへリースを与えてしまうことがある。"
+        ],
+        "evidence": [
+          {
+            "quote": "For algorithms in the asynchronous model this is not a big problem: these algorithms generally ensure that their safety properties always hold, without making any timing assumptions [12]. Only liveness properties depend on timeouts or some other failure detector.",
+            "heading": "Using time to solve consensus",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 263,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Using time to solve consensus",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Its safety depends on a lot of timing assumptions: it assumes that all Redis nodes hold keys for approximately the right length of time before expiring; that the network delay is small compared to the expiry duration; and that process pauses are much shorter than the expiry duration.",
+            "heading": "Using time to solve consensus",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 284,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Using time to solve consensus",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "As soon as those timing assumptions are broken, Redlock may violate its safety properties, e.g. granting a lease to one client before another has expired.",
+            "heading": "The synchrony assumptions of Redlock",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 154,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "The synchrony assumptions of Redlock",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "04-Q4",
+        "angle": "compare",
+        "question": "Martin Kleppmann による 2016 年の Redlock 批判に沿って考えると、分散ロックの目的が効率化（同じ作業の重複を避ける）である場合と、正しさの保証である場合とで、単一の Redis インスタンスによるロックと Redlock（5 台の Redis での多数決）はそれぞれ何を得て何を失うか。",
+        "key_points": [
+          "効率化が目的なら、ロックが失敗しても重複作業のわずかな損で済むので、単一インスタンスが時々ロックを失っても問題にならない。",
+          "効率化が目的の場合に Redlock を使うと、5 台の運用と多数決の費用と複雑さを払うだけで、見合う利得がない。",
+          "正しさが目的の場合、Redlock は安全性が足りず、合意システムを使ったうえで資源へのアクセスにフェンシングトークンを強制する必要がある。"
+        ],
+        "evidence": [
+          {
+            "quote": "If the lock fails and two nodes end up doing the same piece of work, the result is a minor increase in cost (you end up paying 5 cents more to AWS than you otherwise would have) or a minor inconvenience (e.g. a user ends up getting the same email notification twice).",
+            "heading": "What are you using that lock for?",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 267,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "What are you using that lock for?",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "But if you’re only using the locks as an efficiency optimization, and the crashes don’t happen too often, that’s no big deal.",
+            "heading": "What are you using that lock for?",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 125,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "What are you using that lock for?",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "I will argue that if you are using locks merely for efficiency purposes, it is unnecessary to incur the cost and complexity of Redlock, running 5 Redis servers and checking for a majority to acquire your lock.",
+            "heading": "What are you using that lock for?",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 209,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "What are you using that lock for?",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "I think the Redlock algorithm is a poor choice because it is “neither fish nor fowl”: it is unnecessarily heavyweight and expensive for efficiency-optimization locks, but it is not sufficiently safe for situations in which correctness depends on the lock.",
+            "heading": "Conclusion",
+            "supports": [
+              2,
+              3
+            ],
+            "check": {
+              "length": 255,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Conclusion",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "On the other hand, if you need locks for correctness, please don’t use Redlock. Instead, please use a proper consensus system such as ZooKeeper, probably via one of the Curator recipes that implements a lock.",
+            "heading": "Conclusion",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 208,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Conclusion",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "And please enforce use of fencing tokens on all resource accesses under the lock.",
+            "heading": "Conclusion",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 81,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Conclusion",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      }
+    ],
+    "notGenerated": [
+      {
+        "topic": "Redlock がフェンシングトークンを生成できない理由（乱数値では単調性がない、1 台のカウンタでは障害に弱い、など）",
+        "reason": "04-Q2 の成立条件（単調増加する番号の発行）と重なり、独立した問いにすると細部を問うことになるため。"
+      },
+      {
+        "topic": "5 台のノード A〜E と 2 つのクライアントで、時計のジャンプや GC 停止によって二重にロックが取られる具体的な手順",
+        "reason": "04-Q3 で問うたタイミング仮定への依存を例示する場面であり、手順を再現させる問いは細部の暗記になるため。"
+      },
+      {
+        "topic": "Redis がキーの期限切れに使う時刻取得の関数と、同期モデルの 3 つの性質の列挙",
+        "reason": "用語や名前を答えさせる問いになり、方針 1 に反するため。"
+      },
+      {
+        "topic": "時計を一切使わないと合意が不可能になること、ロック取得が合意を必要とすること",
+        "reason": "本文では括弧書きで文献を示して触れているだけで理由が説明されておらず、本文だけを根拠に要点を書けないため。"
+      }
+    ],
+    "selfReport": {
+      "unit_fit": "記事 1 本を丸ごと読む範囲としており、ロックの目的の区別、停止と遅延による破綻、フェンシング、タイミング仮定という中心が 4 つあるため、問いも 4 問になった。分量としては読み切れるが、中心が複数ある範囲である。",
+      "difficulties": "本文に Redlock の対象バージョンが書かれていないため、方針 6 は公開年（2016 年）と論者名を問いの文に入れることで代用した。04-Q4 は選択肢となる方式名を問いに出さないと何の比較か分からず、方針 8（答えの手がかりを含めない）との兼ね合いに迷った。"
+    }
+  },
+  {
+    "id": "05",
+    "questions": [
+      {
+        "id": "05-Q1",
+        "angle": "condition",
+        "question": "サービス間のリモート呼び出しに設定するタイムアウト値を、長すぎる値にした場合と短すぎる値にした場合とで、それぞれどんな問題が起きるか。",
+        "key_points": [
+          "長すぎると、クライアントが待っている間もリソースが使われ続け、タイムアウトを置く意味が薄れる。",
+          "短すぎると、リトライされるリクエストが増えて、バックエンドへのトラフィックと遅延が増える。",
+          "短すぎると、バックエンドの遅延が少し増えただけで全リクエストがリトライされ、全面的な停止につながりうる。"
+        ],
+        "evidence": [
+          {
+            "quote": "Setting a timeout too high reduces its usefulness, because resources are still consumed while the client waits for the timeout.",
+            "heading": "Timeouts",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 127,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Timeouts",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Increased traffic on the backend and increased latency because too many requests are retried.",
+            "heading": "Timeouts",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 93,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Timeouts",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Increased small backend latency leading to a complete outage, because all requests start being retried.",
+            "heading": "Timeouts",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 103,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Timeouts",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "05-Q2",
+        "angle": "condition",
+        "question": "失敗したリクエストをクライアントがリトライする仕組みは、失敗の原因がまれな障害や一時的な障害である場合と、サーバーの過負荷である場合とで、結果がどう変わるか。",
+        "key_points": [
+          "まれな障害や一時的な障害なら、リトライされるリクエストの総数が少ないので、見かけの可用性を上げる取引として割に合う。",
+          "過負荷が原因なら、リトライが負荷をさらに増やして状況を大きく悪化させる。",
+          "過負荷のときは、元の問題が解消したあとも負荷が高いまま続き、復旧が遅れることがある。"
+        ],
+        "evidence": [
+          {
+            "quote": "This is because the overall number of retried requests is small, and the tradeoff of increasing apparent availability works well.",
+            "heading": "Retries and backoff",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 129,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Retries and backoff",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "When failures are caused by overload, retries that increase load can make matters significantly worse. They can even delay recovery by keeping the load high long after the original issue is resolved.",
+            "heading": "Retries and backoff",
+            "supports": [
+              2,
+              3
+            ],
+            "check": {
+              "length": 199,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Retries and backoff",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "05-Q3",
+        "angle": "why",
+        "question": "リトライの間隔を指数的に延ばす指数バックオフで、待ち時間に上限を設けるのはなぜか。また、上限を設けたことで新たに生じる問題と、その対処は何か。",
+        "key_points": [
+          "指数的に延びる待ち時間はすぐに非常に長くなるので、リトライが長引きすぎないように上限で止める。",
+          "上限に達すると、すべてのクライアントが上限の間隔でリトライし続ける状態になる。",
+          "対処として、クライアントがリトライする回数を制限し、その結果の失敗を呼び出しの流れのより手前で扱う。"
+        ],
+        "evidence": [
+          {
+            "quote": "Exponential backoff can lead to very long backoff times, because exponential functions grow quickly. To avoid retrying for too long, implementations typically cap their backoff to a maximum value.",
+            "heading": "Retries and backoff",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 196,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Retries and backoff",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Now all of the clients are retrying constantly at the capped rate.",
+            "heading": "Retries and backoff",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 66,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Retries and backoff",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "In almost all cases, our solution is to limit the number of times that the client retries, and handle the resulting failure earlier in the service-oriented architecture.",
+            "heading": "Retries and backoff",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 169,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Retries and backoff",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "05-Q4",
+        "angle": "compare",
+        "question": "サービス呼び出しが何層にも重なる分散システムで、各層がそれぞれ独立にリトライする方式と、最上位の層だけでリトライする方式を比べると、それぞれ何が問題になるか。",
+        "key_points": [
+          "各層が独立にリトライすると、リトライ回数が層ごとに掛け算で増え、最下層への負荷が膨れ上がって回復しにくくなる。",
+          "最上位の層だけでリトライすると、それまでの呼び出しで済んでいた処理が無駄になり、効率が落ちる。",
+          "コストの低い操作については、スタックの中の1か所だけでリトライするのが基本方針になる。"
+        ],
+        "evidence": [
+          {
+            "quote": "If each layer retries independently, the load on the database will increase 243x, making it unlikely to ever recover. This is because the retries at each layer multiply -- first three tries, then nine tries, and so on.",
+            "heading": "Retries and backoff",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 218,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Retries and backoff",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "On the contrary, retrying at the highest layer of the stack may waste work from previous calls, which reduces efficiency.",
+            "heading": "Retries and backoff",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 121,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Retries and backoff",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "In general, for low-cost control-plane and data-plane operations, our best practice is to retry at a single point in the stack.",
+            "heading": "Retries and backoff",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 127,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Retries and backoff",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "05-Q5",
+        "angle": "why",
+        "question": "過負荷や競合が原因の失敗に対して、リトライの間隔を空けるバックオフだけでは期待したほど効果が出ないのはなぜか。ジッターはそれをどう補うか。",
+        "key_points": [
+          "失敗した呼び出しがそろって同じ時点まで待つと、リトライが同時に届いて再び競合や過負荷を起こす。",
+          "ジッターは待ち時間にランダムなずれを加えて、リトライを時間的に分散させる。"
+        ],
+        "evidence": [
+          {
+            "quote": "If all the failed calls back off to the same time, they cause contention or overload again when they are retried.",
+            "heading": "Jitter",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 113,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Jitter",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Jitter adds some amount of randomness to the backoff to spread the retries around in time.",
+            "heading": "Jitter",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 90,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Jitter",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      }
+    ],
+    "notGenerated": [
+      {
+        "topic": "タイムアウト値の決め方（許容する誤タイムアウト率と下流サービスのレイテンシのパーセンタイル）",
+        "reason": "0.1% や p99.9 といった設定値を答えさせる問いになりやすく、方針1に反するため。"
+      },
+      {
+        "topic": "SO_RCVTIMEO や DNS・TLS ハンドシェイクなど、タイムアウト実装上の落とし穴",
+        "reason": "本文では欠点の中身が説明されておらず、根拠のある要点を作れない細部であるため。"
+      },
+      {
+        "topic": "サーキットブレーカーとトークンバケットによるローカルなリトライ制限の比較",
+        "reason": "比較の問いにはできるが、リトライの補足的な論点であり、細部で問いの数を増やすことになるため見送った。"
+      },
+      {
+        "topic": "副作用のある API のリトライと冪等性",
+        "reason": "本文の説明が短く、問いにすると「冪等性」という用語を答えさせる形になりやすいため。"
+      },
+      {
+        "topic": "定期ジョブのジッターを毎回ランダムにせず、ホストごとに同じ値にする理由",
+        "reason": "理由を問う形にはできるが、ジッターの中心的な仕組みではなく運用上の細部と判断したため。"
+      }
+    ],
+    "selfReport": {
+      "unit_fit": "タイムアウト、リトライとバックオフ、ジッターという3つの中心があり、1つの読む範囲としてはやや広いが、各節が独立しているので節ごとに問いを作ることはできた。",
+      "difficulties": "リトライの節に論点が多く、どこまでが中心でどこからが細部かの線引きに迷った。また「何が起きるか」と対処をまとめて問うと、問いの文が答えの構造を示唆しやすく、方針8との両立が難しかった。"
+    }
+  },
+  {
+    "id": "06",
+    "questions": [
+      {
+        "id": "06-Q1",
+        "angle": "why",
+        "question": "Transformer の注意機構（Scaled Dot-Product Attention）では、クエリとキーの内積を softmax に渡す前に、キーの次元数の平方根で割っている。なぜこの縮小が必要なのか。",
+        "key_points": [
+          "キーの次元が大きいほど、内積の絶対値が大きくなりやすい。",
+          "内積が大きいと softmax が勾配のごく小さい領域に入ってしまうと著者は推測している。",
+          "縮小しない内積注意は、次元が大きいとき加法注意より性能が劣ると報告されている。"
+        ],
+        "evidence": [
+          {
+            "quote": "We suspect that for large values of $d_{k}$ , the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients",
+            "heading": "3.2.1 Scaled Dot-Product Attention",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 168,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "3.2.1 Scaled Dot-Product Attention",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "While for small values of $d_{k}$ the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of $d_{k}$ [3].",
+            "heading": "3.2.1 Scaled Dot-Product Attention",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 174,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "3.2.1 Scaled Dot-Product Attention",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "06-Q2",
+        "angle": "compare",
+        "question": "Transformer は、モデル全体の次元で注意を1回計算する代わりに、次元を小さくした複数のヘッドで注意を並列に計算している。単一ヘッドの注意と比べて何を得ているか。また、計算コストはどう変わるか。",
+        "key_points": [
+          "異なる表現部分空間の情報に、異なる位置で同時に注目できるようになる。",
+          "単一ヘッドでは平均化が起きて、そうした注目の使い分けが妨げられる。",
+          "ヘッドごとの次元を減らしているので、合計の計算コストは全次元の単一ヘッドとほぼ変わらない。"
+        ],
+        "evidence": [
+          {
+            "quote": "Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions. With a single attention head, averaging inhibits this.",
+            "heading": "3.2.2 Multi-Head Attention",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 189,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "3.2.2 Multi-Head Attention",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality.",
+            "heading": "3.2.2 Multi-Head Attention",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 141,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "3.2.2 Multi-Head Attention",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "06-Q3",
+        "angle": "compare",
+        "question": "系列を同じ長さの系列に写す層として自己注意層を使うと、再帰層と比べて何が有利になるか。また、計算量の面でその有利さが成り立つのはどんな条件のときか。",
+        "key_points": [
+          "全位置を定数回の逐次操作で結べるので、系列長に比例した逐次操作が要る再帰層より並列化しやすい。",
+          "位置どうしを信号が行き来する経路が短くなり、長距離の依存関係を学習しやすい。",
+          "層あたりの計算は、系列長が表現の次元数より小さいときに再帰層より速い。"
+        ],
+        "evidence": [
+          {
+            "quote": "As noted in Table 1, a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires $O(n)$ sequential operations.",
+            "heading": "4 Why Self-Attention",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 191,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "4 Why Self-Attention",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "The shorter these paths between any combination of positions in the input and output sequences, the easier it is to learn long-range dependencies [12].",
+            "heading": "4 Why Self-Attention",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 151,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "4 Why Self-Attention",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "In terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length $n$ is smaller than the representation dimensionality $d$ , which is most often the case with sentence representations used by state-of-the-art models in machine translations, such as word-piece [38] and byte-pair [31] representations.",
+            "heading": "4 Why Self-Attention",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 353,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "4 Why Self-Attention",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "06-Q4",
+        "angle": "why",
+        "question": "Transformer で、入力の埋め込みに位置の情報を足し合わせる必要があるのはなぜか。また、その位置情報に、学習する埋め込みではなく正弦波・余弦波による固定の関数を選んだ理由は何か。",
+        "key_points": [
+          "再帰も畳み込みも持たないので、位置情報を与えないと系列の順序を利用できない。",
+          "一定の距離だけ離れた位置の符号が元の位置の符号の線形関数で表せるので、相対位置に基づく注目を学習しやすいと著者は仮定した。",
+          "学習時に出会ったものより長い系列にも外挿できる可能性がある。"
+        ],
+        "evidence": [
+          {
+            "quote": "Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence.",
+            "heading": "3.5 Positional Encoding",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 226,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "3.5 Positional Encoding",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset $k$ , $PE_{pos+k}$ can be represented as a linear function of $PE_{pos}$ .",
+            "heading": "3.5 Positional Encoding",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 222,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "3.5 Positional Encoding",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.",
+            "heading": "3.5 Positional Encoding",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 147,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "3.5 Positional Encoding",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "06-Q5",
+        "angle": "condition",
+        "question": "Transformer のデコーダの自己注意で、各位置が自分より後ろの位置にも注目できるようにしてしまうと、何が損なわれるか。Transformer はそれをどのように防いでいるか。",
+        "key_points": [
+          "すでに生成した出力だけを使って次を生成するという自己回帰の性質が保てなくなる。",
+          "許されない接続に当たる softmax の入力値を負の無限大にして、注目の重みが付かないようにしている。",
+          "このマスクと、出力埋め込みを1位置ずらすことを合わせて、ある位置の予測がそれより前の既知の出力だけに依存するようにしている。"
+        ],
+        "evidence": [
+          {
+            "quote": "We need to prevent leftward information flow in the decoder to preserve the auto-regressive property.",
+            "heading": "3.2.3 Applications of Attention in our Model",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 101,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "3.2.3 Applications of Attention in our Model",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "We implement this inside of scaled dot-product attention by masking out (setting to $-\\infty$ ) all values in the input of the softmax which correspond to illegal connections.",
+            "heading": "3.2.3 Applications of Attention in our Model",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 175,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "3.2.3 Applications of Attention in our Model",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position $i$ can depend only on the known outputs at positions less than $i$ .",
+            "heading": "Decoder:",
+            "supports": [
+              1,
+              3
+            ],
+            "check": {
+              "length": 199,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "Decoder:",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      }
+    ],
+    "notGenerated": [
+      {
+        "topic": "非常に長い系列で自己注意を近傍だけに制限した場合の得失",
+        "reason": "本文では今後の検討課題として触れられているだけで、モデルに採用された仕組みではなく、範囲の中心から外れる細部と判断した。"
+      },
+      {
+        "topic": "自己注意層と畳み込み層の計算量・経路長の比較",
+        "reason": "比較の全体は中身が抜き出されていない Table 1 に依存しており、本文だけでは計算量の式を答えさせる細かい問いになるため。"
+      },
+      {
+        "topic": "残差接続のために全サブ層の出力次元をそろえていること、層数やヘッド数などの値",
+        "reason": "設定値を答えさせる問いになり、理由も本文では一言しか述べられていないため。"
+      },
+      {
+        "topic": "埋め込み層と softmax 前の線形変換での重み共有、位置ごとのフィードフォワード網の構成",
+        "reason": "本文には構成の記述だけがあり、なぜそうするかの理由や他方式との比較が書かれていないため、根拠のある問いにできない。"
+      }
+    ],
+    "selfReport": {
+      "unit_fit": "3章と4章を合わせた範囲は中心となる仕組みが多く（注意のスケーリング、マルチヘッド、マスク、位置符号化、他の層との比較）、1つの単位としては長すぎるので問いが5問に増えた。3.2 の注意、3.5 の位置符号化、4章の比較くらいに分けたほうが絞りやすい。",
+      "difficulties": "仕組みを特定しないと問いが成り立たないため、問いの文に仕組みの説明（平方根で割る、複数ヘッドに分ける、など）を入れざるを得ず、答えの手がかりを含めない方針との線引きに迷った。4章の比較は Table 1 が抜けているので、本文の文で言い切れる範囲に限った。"
+    }
+  },
+  {
+    "id": "07",
+    "questions": [
+      {
+        "id": "07-Q1",
+        "angle": "why",
+        "question": "PostgreSQL 17 では SQL 標準の4つのトランザクション分離レベルをすべて指定できるが、標準の定義どおりには振る舞わないレベルがある。なぜそのような実装になっているのか。また、それが SQL 標準に照らして許されるのはなぜか。",
+        "key_points": [
+          "内部で実装されている分離レベルは3つだけで、最も弱いレベルを指定しても1つ上のレベルと同じ動作になる。",
+          "多版型同時実行制御（MVCC）の構造に標準のレベルを対応づけるには、そうするのが唯一筋の通ったやり方だから。",
+          "標準が定めているのは各レベルで起きてはならない現象だけなので、それより強い保証を与える実装は認められる。"
+        ],
+        "evidence": [
+          {
+            "quote": "In PostgreSQL, you can request any of the four standard transaction isolation levels, but internally only three distinct isolation levels are implemented, i.e., PostgreSQL's Read Uncommitted mode behaves like Read Committed.",
+            "heading": "",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 224,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "This is because it is the only sensible way to map the standard isolation levels to PostgreSQL's multiversion concurrency control architecture.",
+            "heading": "",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 143,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "This is acceptable under the SQL standard because the standard specifies which anomalies must not occur at certain isolation levels; higher guarantees are acceptable.",
+            "heading": "",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 166,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "07-Q2",
+        "angle": "compare",
+        "question": "PostgreSQL 17 の Read Committed と Repeatable Read では、問い合わせが参照するスナップショットの取り方がどう違うか。その違いは、1つのトランザクションの中で同じ SELECT を繰り返したときの結果にどう表れるか。",
+        "key_points": [
+          "Read Committed では、問い合わせごとに、その問い合わせを開始した時点のスナップショットを見る。",
+          "Repeatable Read では、トランザクション内の最初の文（トランザクション制御文を除く）の開始時点のスナップショットを最後まで使うので、繰り返した SELECT は同じデータを返す。",
+          "Read Committed では、2回の SELECT の間に他のトランザクションがコミットすると、同じトランザクション内でも結果が変わりうる。"
+        ],
+        "evidence": [
+          {
+            "quote": "In effect, a SELECT query sees a snapshot of the database as of the instant the query begins to run.",
+            "heading": "13.2.1. Read Committed Isolation Level #",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 100,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.1. Read Committed Isolation Level #",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "This level is different from Read Committed in that a query in a repeatable read transaction sees a snapshot as of the start of the first non-transaction-control statement in the transaction, not as of the start of the current statement within the transaction. Thus, successive SELECT commands within a single transaction see the same data, i.e., they do not see changes made by other transactions that committed after their own transaction started.",
+            "heading": "13.2.2. Repeatable Read Isolation Level #",
+            "supports": [
+              1,
+              2
+            ],
+            "check": {
+              "length": 449,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.2. Repeatable Read Isolation Level #",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Also note that two successive SELECT commands can see different data, even though they are within a single transaction, if other transactions commit changes after the first SELECT starts and before the second SELECT starts.",
+            "heading": "13.2.1. Read Committed Isolation Level #",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 223,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.1. Read Committed Isolation Level #",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "07-Q3",
+        "angle": "condition",
+        "question": "PostgreSQL 17 の Read Committed で、UPDATE や DELETE が対象として見つけた行を、並行する別のトランザクションが先に更新してコミットした場合、後から来たコマンドはその行をどう扱うか。また、その扱いはどんな種類のコマンドで問題になり、どんな種類のコマンドでは問題にならないか。",
+        "key_points": [
+          "更新後の行に対して WHERE 条件を評価し直し、まだ条件に合っていれば更新後の行に対して操作を行う。",
+          "更新しようとする行だけは並行更新の結果が見え、他の行では見えないので、1つのコマンドが見るデータに一貫性がなくなり、検索条件が複雑なコマンドには向かない。",
+          "あらかじめ決まった行だけを対象にする単純な更新であれば、更新後の行を見ても困る不整合は生じない。"
+        ],
+        "evidence": [
+          {
+            "quote": "The search condition of the command (the WHERE clause) is re-evaluated to see if the updated version of the row still matches the search condition. If so, the second updater proceeds with its operation using the updated version of the row.",
+            "heading": "13.2.1. Read Committed Isolation Level #",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 239,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.1. Read Committed Isolation Level #",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Because of the above rules, it is possible for an updating command to see an inconsistent snapshot: it can see the effects of concurrent updating commands on the same rows it is trying to update, but it does not see effects of those commands on other rows in the database. This behavior makes Read Committed mode unsuitable for commands that involve complex search conditions; however, it is just right for simpler cases.",
+            "heading": "13.2.1. Read Committed Isolation Level #",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 421,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.1. Read Committed Isolation Level #",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "Because each command is affecting only a predetermined row, letting it see the updated version of the row does not create any troublesome inconsistency.",
+            "heading": "13.2.1. Read Committed Isolation Level #",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 152,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.1. Read Committed Isolation Level #",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "07-Q4",
+        "angle": "condition",
+        "question": "PostgreSQL 17 の Repeatable Read トランザクションが更新しようとした行を、そのトランザクションの開始後に別のトランザクションが更新してコミットしていた場合、何が起きるか。アプリケーション側に求められる対処と、その対処でうまくいく理由もあわせて説明せよ。",
+        "key_points": [
+          "自分の開始後に他のトランザクションが変更した行は変更もロックもできないため、エラーになってトランザクションがロールバックされる。",
+          "アプリケーションは、そのトランザクションを中断し、全体を最初からやり直す必要がある。",
+          "やり直したトランザクションは、先にコミットされた変更を最初から見た状態で始まるので、新しい行を出発点に更新しても論理的な衝突がない。"
+        ],
+        "evidence": [
+          {
+            "quote": "But if the first updater commits (and actually updated or deleted the row, not just locked it) then the repeatable read transaction will be rolled back with the message",
+            "heading": "13.2.2. Repeatable Read Isolation Level #",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 168,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.2. Repeatable Read Isolation Level #",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "because a repeatable read transaction cannot modify or lock rows changed by other transactions after the repeatable read transaction began.",
+            "heading": "13.2.2. Repeatable Read Isolation Level #",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 139,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.2. Repeatable Read Isolation Level #",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "When an application receives this error message, it should abort the current transaction and retry the whole transaction from the beginning. The second time through, the transaction will see the previously-committed change as part of its initial view of the database, so there is no logical conflict in using the new version of the row as the starting point for the new transaction's update.",
+            "heading": "13.2.2. Repeatable Read Isolation Level #",
+            "supports": [
+              2,
+              3
+            ],
+            "check": {
+              "length": 391,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.2. Repeatable Read Isolation Level #",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      },
+      {
+        "id": "07-Q5",
+        "angle": "compare",
+        "question": "PostgreSQL 17 の Serializable 分離レベルは、Repeatable Read と比べて仕組みの上で何が加わっているか。それによって開発者は何を得て、代わりにどんなコストを負うか。",
+        "key_points": [
+          "動作は Repeatable Read と同じで、そこに、直列に実行した場合と食い違う結果になりうる状況を監視する仕組みが加わっている。",
+          "コミットに成功したトランザクション群は1つずつ順に実行したのと同じ結果になるので、各トランザクションが単独で正しいことを確かめれば、他のトランザクションの内容を知らなくても正しさを信頼できる。",
+          "監視によってブロックが増えることはないが、監視そのもののオーバーヘッドと、直列化失敗で打ち切られたトランザクションをやり直すコストがかかる。"
+        ],
+        "evidence": [
+          {
+            "quote": "In fact, this isolation level works exactly the same as Repeatable Read except that it also monitors for conditions which could make execution of a concurrent set of serializable transactions behave in a manner inconsistent with all possible serial (one at a time) executions of those transactions.",
+            "heading": "13.2.3. Serializable Isolation Level #",
+            "supports": [
+              1
+            ],
+            "check": {
+              "length": 298,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.3. Serializable Isolation Level #",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "The guarantee that any set of successfully committed concurrent Serializable transactions will have the same effect as if they were run one at a time means that if you can demonstrate that a single transaction, as written, will do the right thing when run by itself, you can have confidence that it will do the right thing in any mix of Serializable transactions, even without any information about what those other transactions might do, or it will not successfully commit.",
+            "heading": "13.2.3. Serializable Isolation Level #",
+            "supports": [
+              2
+            ],
+            "check": {
+              "length": 474,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.3. Serializable Isolation Level #",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "This monitoring does not introduce any blocking beyond that present in repeatable read, but there is some overhead to the monitoring, and detection of the conditions which could cause a serialization anomaly will trigger a serialization failure.",
+            "heading": "13.2.3. Serializable Isolation Level #",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 245,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.3. Serializable Isolation Level #",
+              "headingOk": true
+            }
+          },
+          {
+            "quote": "The monitoring of read/write dependencies has a cost, as does the restart of transactions which are terminated with a serialization failure, but balanced against the cost and blocking involved in use of explicit locks and SELECT FOR UPDATE or SELECT FOR SHARE, Serializable transactions are the best performance choice for some environments.",
+            "heading": "13.2.3. Serializable Isolation Level #",
+            "supports": [
+              3
+            ],
+            "check": {
+              "length": 341,
+              "crossesLine": false,
+              "match": "exact",
+              "actualHeading": "13.2.3. Serializable Isolation Level #",
+              "headingOk": true
+            }
+          }
+        ],
+        "problems": [],
+        "verdict": "通過"
+      }
+    ],
+    "notGenerated": [
+      {
+        "topic": "Read Committed での INSERT ... ON CONFLICT と MERGE の並行時の挙動",
+        "reason": "コマンドごとの個別の規則で、読む範囲の中心となる仕組みではなく細部にあたるため。"
+      },
+      {
+        "topic": "述語ロックの粒度の統合や、Serializable で性能を出すための設定項目",
+        "reason": "設定値やパラメータ名を答えさせる問いになりやすく、運用上の細部にあたるため。"
+      },
+      {
+        "topic": "Snapshot Isolation と従来のロック方式とで許される現象の違い",
+        "reason": "本文がこの違いをマニュアルの範囲外として文献に委ねており、本文だけでは模範解答の根拠がそろわないため。"
+      },
+      {
+        "topic": "シーケンスへの変更がロールバックされないという例外規則",
+        "reason": "本文には事実が1文あるだけで、理由や成立条件の説明がなく、要点を2つ以上立てられないため。"
+      }
+    ],
+    "selfReport": {
+      "unit_fit": "1ページの中に3つの分離レベルと標準との対応づけという複数の中心があり、問いが5問になった。分離レベルごとに範囲を分けたほうが、1回に読む単位としては扱いやすい。",
+      "difficulties": "英語の1文が長く、根拠を1〜2文に収めると quote が長くなる箇所があった。また、エラーメッセージの前後で段落が分かれているため、Repeatable Read のロールバックの根拠を2つの quote に分ける必要があった。"
+    }
+  }
+]
