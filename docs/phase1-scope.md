@@ -2,7 +2,7 @@
 
 - 作成日：2026年11月21日
 - 更新：2026年11月23日（完成と言える状態、2週間使ったあとに見ること、読む本数の目安を足した。問いを埋めたあとに要点を確かめて終える流れと、問いが2問に満たない記事の扱いを足した）
-- 関連：[企画メモ](../portfolio-plan.md)、[S-002 の評価](../experiments/s-002-question-trial/evaluation.md)
+- 関連：[企画メモ](../portfolio-plan.md)、[問いの生成の試行の評価](../experiments/question-trial/evaluation.md)
 
 ---
 
