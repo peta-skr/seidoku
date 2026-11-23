@@ -1,5 +1,4 @@
-# Startup Mode（手元で使う学習ツール）の状態と、役を演じさせるコマンドは公開しない
-campaign/
+# Claude Code の手元用のコマンドは公開しない
 .claude/commands/
 
 # Claude Code の個人設定
