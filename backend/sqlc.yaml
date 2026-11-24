@@ -1,0 +1,12 @@
+# スキーマはマイグレーションの SQL から読む。クエリは internal/db/queries に書き、
+# go tool sqlc generate で internal/db に Go のコードを生成する
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: internal/db/queries
+    gen:
+      go:
+        package: db
+        out: internal/db
+        sql_package: pgx/v5
